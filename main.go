@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"path/filepath"
 	"syscall"
 )
 
@@ -41,7 +42,7 @@ func child() {
 	fmt.Printf("Running %v as %d\n", os.Args[2:], os.Getpid())
 	u, _ := user.Current()
 	fmt.Println(u.Username)
-	// cgroups()
+	cgroups()
 	syscall.Sethostname([]byte("container"))
 	syscall.Chroot("/ubuntu-fs")
 	syscall.Chdir("/")
@@ -54,18 +55,20 @@ func child() {
 	syscall.Unmount("/proc", 0)
 }
 
-// func cgroups() {
-// 	cgroups := "/sys/fs/cgroup"
-// 	err := os.Mkdir(filepath.Join(cgroups, "adi"), 0755)
-// 	if err != nil && !os.IsExist(err) {
-// 		panic(err)
-// 	}
-// 	must(os.WriteFile(filepath.Join(cgroups, "adi/pids.max"), []byte("20"), 0700))
-// 	must(os.WriteFile(filepath.Join(cgroups, "adi/notify_on_release"), []byte("1"), 0700))
-// }
+func cgroups() {
+	cgroupsRoot := "/sys/fs/cgroup/"
+	cgroupPath := filepath.Join(cgroupsRoot, "adi")
+	os.WriteFile(filepath.Join(cgroupsRoot, "cgroup.subtree_control"), []byte("+pids"), 0700)
+	err := os.Mkdir(cgroupPath, 0755)
+	if err != nil && !os.IsExist(err) {
+		panic(err)
+	}
+	must(os.WriteFile(filepath.Join(cgroupPath, "pids.max"), []byte("20"), 0700))
+	must(os.WriteFile(filepath.Join(cgroupPath, "cgroup.procs"), []byte("1"), 0700))
+}
 
-// func must(err error) {
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// }
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}

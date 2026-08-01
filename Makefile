@@ -5,6 +5,7 @@ build:
 # Run the container
 run:
 	docker run -it --rm --privileged \
+	    --userns=host --cgroupns=host \
 	    --platform linux/arm64 \
 		--name smol-container \
 		-p 8888:8888 \
