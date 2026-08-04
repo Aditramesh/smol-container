@@ -15,12 +15,16 @@ COPY . ./
 RUN mkdir ubuntu-fs/ROOT_FOR_CONTAINER
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=arm64 \
-    go build -o app .
+    go build -o app ./cmd/
+
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=arm64 \
+    go build -o memory ./parameter_tests/
 
 # Runtime stage
 FROM golang:1.26.2
 
 COPY --from=builder /src/app /app
 COPY --from=builder /src/ubuntu-fs /ubuntu-fs
+COPY --from=builder /src/memory /ubuntu-fs
 
 ENTRYPOINT ["/app"]

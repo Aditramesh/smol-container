@@ -58,12 +58,14 @@ func child() {
 func cgroups() {
 	cgroupsRoot := "/sys/fs/cgroup/"
 	cgroupPath := filepath.Join(cgroupsRoot, "adi")
-	os.WriteFile(filepath.Join(cgroupsRoot, "cgroup.subtree_control"), []byte("+pids"), 0700)
+	os.WriteFile(filepath.Join(cgroupsRoot, "cgroup.subtree_control"), []byte("+memory +pids"), 0700)
 	err := os.Mkdir(cgroupPath, 0755)
 	if err != nil && !os.IsExist(err) {
 		panic(err)
 	}
 	must(os.WriteFile(filepath.Join(cgroupPath, "pids.max"), []byte("20"), 0700))
+	must(os.WriteFile(filepath.Join(cgroupPath, "memory.max"), []byte("52428800"), 0700))
+	must(os.WriteFile(filepath.Join(cgroupPath, "memory.swap.max"), []byte("00"), 0700))
 	must(os.WriteFile(filepath.Join(cgroupPath, "cgroup.procs"), []byte("1"), 0700))
 }
 
