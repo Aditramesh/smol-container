@@ -1,0 +1,1 @@
+A basic implementation of containers from scratch using linux namespaces and cgroups.
