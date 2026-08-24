@@ -4,8 +4,10 @@ build:
 
 # Run the container
 run:
-	docker run -it --rm --privileged \
-	    --userns=host --cgroupns=host \
+	docker run -it --rm \
+	    --cap-add=SYS_ADMIN \
+        --security-opt seccomp=unconfined \
+        --security-opt apparmor=unconfined \
 	    --platform linux/arm64 \
 		--name smol-container \
 		-p 8888:8888 \

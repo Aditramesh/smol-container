@@ -25,12 +25,12 @@ func main() {
 
 func run() {
 	fmt.Printf("Running %v as %d\n", os.Args[2:], os.Getpid())
-	cmd := exec.Command("../proc/self/exe", append([]string{"child"}, os.Args[2:]...)...)
+	cmd := exec.Command("/proc/self/exe", append([]string{"child"}, os.Args[2:]...)...)
 	cmd.Stdin = os.Stdin
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWPID | syscall.CLONE_NEWNS,
+		Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWPID,
 	}
 	err := cmd.Run()
 	if err != nil {
@@ -47,11 +47,10 @@ func child() {
 	syscall.Chroot("/ubuntu-fs")
 	syscall.Chdir("/")
 	syscall.Mount("proc", "proc", "proc", 0, "")
-	cmd := exec.Command(os.Args[2], os.Args[3:]...)
-	cmd.Stdin = os.Stdin
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
-	cmd.Run()
+	err := syscall.Exec(os.Args[2], os.Args[2:], os.Environ())
+	if err != nil {
+		panic("err while execve'ing child process ")
+	}
 	syscall.Unmount("/proc", 0)
 }
 
