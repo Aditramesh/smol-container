@@ -30,7 +30,7 @@ func run() {
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWPID,
+		Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWPID | syscall.CLONE_NEWNS,
 	}
 	err := cmd.Run()
 	if err != nil {
@@ -42,12 +42,30 @@ func child() {
 	fmt.Printf("Running %v as %d\n", os.Args[2:], os.Getpid())
 	u, _ := user.Current()
 	fmt.Println(u.Username)
-	cgroups()
+	// need to look into permissions.
+	// cgroups()
 	syscall.Sethostname([]byte("container"))
-	syscall.Chroot("/ubuntu-fs")
+	err := syscall.Mount("/ubuntu-fs", "/ubuntu-fs", "", syscall.MS_BIND, "")
+	if err != nil {
+		panic(err)
+	}
+	err = os.Mkdir("/ubuntu-fs/old-root", 0755)
+	if err != nil {
+		panic(err)
+	}
+	err = syscall.PivotRoot("/ubuntu-fs", "/ubuntu-fs/old-root")
+	if err != nil {
+		panic(err)
+	}
+	// syscall.Chroot("/ubuntu-fs")
 	syscall.Chdir("/")
+	err = syscall.Unmount("/old-root", 0)
+	if err != nil {
+		panic(err)
+	}
+	err = syscall.Rmdir("/old-root")
 	syscall.Mount("proc", "proc", "proc", 0, "")
-	err := syscall.Exec(os.Args[2], os.Args[2:], os.Environ())
+	err = syscall.Exec(os.Args[2], os.Args[2:], os.Environ())
 	if err != nil {
 		panic("err while execve'ing child process ")
 	}
