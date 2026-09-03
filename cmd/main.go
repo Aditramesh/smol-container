@@ -30,7 +30,7 @@ func run() {
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWPID | syscall.CLONE_NEWNS,
+		Cloneflags: syscall.CLONE_NEWNS | syscall.CLONE_NEWPID | syscall.CLONE_NEWUTS,
 	}
 	err := cmd.Run()
 	if err != nil {
@@ -45,21 +45,21 @@ func child() {
 	// need to look into permissions.
 	// cgroups()
 	syscall.Sethostname([]byte("container"))
+	syscall.Mount("", "/", "", syscall.MS_REC|syscall.MS_PRIVATE, "")
 	err := syscall.Mount("/ubuntu-fs", "/ubuntu-fs", "", syscall.MS_BIND, "")
 	if err != nil {
 		panic(err)
 	}
-	err = os.Mkdir("/ubuntu-fs/old-root", 0755)
-	if err != nil {
+	err = os.MkdirAll("/ubuntu-fs/old-root", 0755)
+	if err != nil && !os.IsExist(err) {
 		panic(err)
 	}
 	err = syscall.PivotRoot("/ubuntu-fs", "/ubuntu-fs/old-root")
 	if err != nil {
 		panic(err)
 	}
-	// syscall.Chroot("/ubuntu-fs")
 	syscall.Chdir("/")
-	err = syscall.Unmount("/old-root", 0)
+	err = syscall.Unmount("/old-root", syscall.MNT_DETACH)
 	if err != nil {
 		panic(err)
 	}
